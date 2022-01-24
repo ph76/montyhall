@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<title>Paradox Monty Hall</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.3/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.3/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBOsv0yr5luI66_nIJ4Sweyg7swzxrEF0E",
+    authDomain: "monty-hall-ux.firebaseapp.com",
+    projectId: "monty-hall-ux",
+    storageBucket: "monty-hall-ux.appspot.com",
+    messagingSenderId: "443905548796",
+    appId: "1:443905548796:web:a24c4b60b8096ad5595279",
+    measurementId: "G-6GB6VHR688"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+<link rel="stylesheet" href="static/css/fontawesome.min.css">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<script src="https://www.w3schools.com/lib/w3.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.0.0/css/font-awesome.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.10/seedrandom.min.js">
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js" integrity="sha512-TW5s0IT/IppJtu76UbysrBH9Hy/5X41OTAbQuffZFU6lQ1rdcLHzpU5BzVvr/YFykoiMYZVWlr/PX1mDcfM9Qg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+// Sets Math.random to a PRNG initialized using the given explicit seed.
+var codeHour=["Annie","Brian","Charly","Danny","Emma","Frances","Gerald","Hubert","Iseuld","Jammie","Kalessi","Lara","Maria","Nora","Oscar","Piotr","Quentin","Rosie","Sara","Tommy","Usopp","Veronica","William","Xavier","Yves","Zlatan"];
+var codeMin=["Martin","Bernard","Thomas","Petit","Robert","Richard",
+"Durand","Dubois","Moreau","Laurent","Simon","Michel","Lefebvre","Leroy","Roux",
+"David","Bertrand","Morel","Fournier","Girard","Bonnet","Dupont","Lambert","Fontaine",
+"Rousseau","Vincent","Muller","Lefevre","Faure","Andre","Mercier","Blanc","Guerin","Boyer","Garnier",
+"Chevalier","Francois","Legrand ","Gauthier","Garcia","Perrin ","Robin",
+"Clement","Morin","Nicolas","Henry","Roussel","Mathieu","Gautier","Masson","Marchand","Duval","Denis",
+"Dumont","Marie","Lemaire","Noel","Meyer","Dufour","Meunier"];
+var themes=[
+  { Title:"Original",Subtitle:"Trouvez la porsche! ",infotext:["Trouvez la voiture! ","Confirmez votre choix","Confirmez ou changez !", "Perdu!","Gagné!","Cliquer pour rejouer","Manche suivante >"],
+hidden:"static/img/thm1_hidden.jpg",win:"static/img/thm1_win.jpg",lose:["static/img/thm1_lose.jpg"]},
+];
+var time = Date.now();
+var drr= time; 
+var nb_cards=3;
+var card_selected=-1;
+var card_state=[];
+var keyCode;
+var days="";
+var other_card;
+var nb_parties=0;
+var nb_win=0;
+var thecard=-1;
+var mode_play="player";
+var infotext=["Trouvez la bonne carte! ","Confirmez votre choix","Confirmez ou changez !", "Perdu!","Gagné!","Cliquer pour rejouer","Manche suivante >"];
+var infostate=0;
+var themeid =0;
+var simul=false;
+var simul_choose=[];
+var courbes = [];
+var time_update=Date.now();        // Always 0.3752569768646784
+function reset(){
+
+ 
+  new_party();
+  
+}
+
+        // Always 0.3752569768646784
+function change_theme(theme){
+  themeid=theme;
+new_party();
+
+}
+
+function new_party()
+{
+
+ 
+  get_key_party();
+   nb_parties=0;
+   nb_win=0;
+   courbes = [{color:"cyan",title:"50/50",nb_win:0,perc:[]},{color:"pink",title:"change",nb_win:0,perc:[]},{color:"magenta",title:"garde",nb_win:0,perc:[]},{color:"green",title:"player",nb_win:0,perc:[]}]
+  infotext= themes[themeid].infotext;
+  for(var i=0;i<myChart.data.datasets.length;i++) myChart.data.datasets[i].data=[];
+  myChart.data.labels=[];
+  chart_update();
+   displayscore(0)
+  new_game()
+}
+
+function change_mode(mode){
+
+  mode_play=mode;
+  document.getElementById("player").style.backgroundColor= mode_play=="player"? "blue":"gray";
+  document.getElementById("witness").style.backgroundColor= mode_play=="witness"? "blue":"gray";
+  document.getElementById("party_block").style.display= mode_play=="witness"? "none":"";
+ 
+  
+ 
+  reset();
+}
+
+
+
+function get_key_party()
+{
+  time = Date.now();
+  days= Math.floor(time / (24*3600000)) ;
+var mins= Math.floor(time / 60000) % 60;
+var hrs= Math.floor(time / (3600000)) % 24 ;
+
+ 
+keyCode= codeHour[hrs]+ " "+ codeMin[mins]
+document.getElementById("idparty").innerHTML="Party :" + keyCode
+console.log(" keyCode : " +keyCode); 
+
+
+}
+function set_nb_cards(add){
+if(nb_cards+add<3) return;
+nb_cards+=add;
+document.getElementById("nb_cards").innerHTML="  Nombre de cartes :  "+nb_cards;
+new_party();
+}
+
+function displayscore(info)
+{
+  infostate=info;
+  document.getElementById("info").innerHTML=infotext[infostate];
+document.getElementById("parties").innerHTML="Parties gagnées  :" + nb_win + "/" + nb_parties ;
+document.getElementById("percparties").innerHTML=nb_parties==0 ? "": Math.floor(100*  nb_win / nb_parties) +"%";
+
+}
+function new_game(){
+
+displayscore(mode_play=="witness" ? 6:0)
+nb_parties++;
+document.getElementById("idparty").innerHTML="Party :" + keyCode + " " + nb_parties ;
+ht=[]
+card_state=[]
+card_selected=-1
+marge=3;
+Math.seedrandom(keyCode + " " + days + " " + nb_parties);
+thecard =  Math.floor (nb_cards *Math.random());
+
+if((25*nb_cards- marge*(nb_cards-1)) >85)
+ marge= (-85+25*nb_cards)/(nb_cards-1)
+for(var i=0;i<nb_cards;i++)
+{
+  card_state.push({ hide:true, img_hidden:thecard!=i?  themes[themeid].lose[i%themes[themeid].lose.length ] :themes[themeid].win, thecard: thecard==i   });
+  if(mode_play=="witness")
+  img=card_state [i].img_hidden ;
+  else
+  img= themes[themeid].hidden;
+  ht.push('<div id="card_'+i+'" class="w3-card w3-round-xlarge"  onclick="click_card('+i+')" style="width:25vmin;height:40vmin;background-color: gray; display:inline-block;margin-left:-'+ (i==0?0:marge)+'vmin;overflow:hidden;border:1px solid #fffa; "><img class="slidxes" id="card_img_'+i+'" src="'+ img +'" class="w3-image" height="100%" width="100%"></div>');
+}
+
+document.getElementById("div_cards").style.width= (1+25*nb_cards- marge*(nb_cards-1))   +"vmin";
+document.getElementById("div_cards").innerHTML= ht.join("");
+
+}
+function info_click(){
+  if( infostate== 5 || infostate== 6) new_game();
+}
+
+function click_card(i,unselected){
+if( infostate== 5 || infostate== 6) {
+  new_game();
+return;
+}
+if(mode_play=="witness" ||  card_state[i].visible) return;
+var card= document.getElementById("card_"+i);
+if(card_selected!=-1 && card_selected!=i) click_card(card_selected,true);
+if(unselected)
+{
+  console.log("unselected " + i) ;
+  card_state[i].selected=false;
+  card_selected= -1;
+  card.style.transform=" translate(0px, 0px)";
+return;
+}
+if(!card_state[i].selected){
+  card_state[i].selected=true;
+  card_selected= i;
+  card.style.transform=" translate(0px, -10vmin)";
+  if( infostate==0) 
+  {
+    infostate=1;
+    document.getElementById("info").innerHTML=infotext[infostate];
+    return;
+  }
+}
+else
+{
+
+  if( infostate==1) 
+  {
+    infostate=2;
+    document.getElementById("info").innerHTML=infotext[infostate];
+
+     other_card=thecard;
+    while(other_card==card_selected)
+      other_card =  Math.floor (nb_cards *Math.random());
+
+    simulechoose=[  Math.random() >0.5 ? card_selected: other_card , other_card,card_selected ];
+
+for(var j=0;j<nb_cards;j++)
+{
+  if(thecard!=j && card_selected!=j && other_card!=j )
+  {
+    card_state[j].visible=true;
+    document.getElementById("card_img_"+j).src=card_state[j].img_hidden ;
+  }
+}
+
+    return;
+  }
+  if( infostate==2) 
+  {
+
+    if (card_selected==thecard)
+    {
+      infostate=4; 
+      nb_win++;
+      if (!simul) courbes[3].nb_win++;
+    }
+    else
+    {
+      infostate=3; 
+    }
+for(var s=0;s<3;s++)
+{
+  if(simulechoose[s]==thecard) courbes[s].nb_win++;
+}
+myChart.data.labels.push( nb_parties);
+for(var s=0;s<( simul ? 3:4);s++)
+{
+   myChart.data.datasets[s].data.push(courbes[s].nb_win/ nb_parties );
+}
+
+ chart_update();
+    
+for(var i=0;i<nb_cards;i++)
+{
+  document.getElementById("card_img_"+i).src=card_state[i].img_hidden ;
+}
+
+    document.getElementById("info").innerHTML=infotext[infostate];
+    setTimeout( ()=>{ if(infostate>2) displayscore(5);},1000 );
+    return;
+  }
+  card_state[i].selected=false;
+  card_selected= -1;
+  card.style.transform="";
+}
+
+}
+const sleep = (delay)=>new Promise((resolve)=>setTimeout(resolve,delay));
+const simulate= async (mode_simulation)=>{
+  if( simul) return;
+  document.getElementById("stop_simul").style.display="inline-block";
+  for(var i=0;i<3;i++){
+    if(i!=mode_simulation)
+     document.getElementById("simul_"+i).style.display="none";
+    }
+  simul=true;
+  for(var i=0;i<300;i++){
+    new_game();
+    await sleep(1);
+   var choose=  Math.floor (nb_cards *Math.random());
+   click_card(choose);
+   await sleep(1);
+   click_card(choose); //confirm
+   await sleep(1);
+
+  
+   var newchoose= simulechoose[mode_simulation];
+
+    if(newchoose!=choose) {
+       click_card(newchoose); 
+       await sleep(1);
+    }
+    click_card(newchoose); 
+    await sleep(1);
+    if( simul==false) break;
+  }
+  simul=false;
+  for(var i=0;i<3;i++){
+     document.getElementById("simul_"+i).style.display="inline-block";
+    }
+    document.getElementById("stop_simul").style.display="none";
+}
+
+function chart_update(){
+
+  new_time_update=Date.now();
+if(new_time_update-time_update>1000)
+{
+myChart.update();
+time_update=new_time_update;
+}
+}
+
+
+//// Chart.js
+const DATA_COUNT = 7;
+const NUMBER_CFG = {count: DATA_COUNT, min: -100, max: 100};
+
+const labels = [];
+const data = {
+  labels: labels,
+  datasets: [
+    {
+      label: '50/50',
+      data: [],
+      borderColor: "gray",
+      backgroundColor: "gray",
+    },
+    {
+      label: 'Change',
+      data: [],
+      borderColor: "orange",
+      backgroundColor: "orange",
+    }
+    ,
+    {
+      label: 'Garde',
+      data: [],
+      borderColor: "rgb(182, 84, 38)",
+      backgroundColor: "rgb(182, 84, 38)",
+    },
+    {
+      label: 'Player',
+      data: [],
+      borderColor: "green",
+      backgroundColor: "green",
+    }
+  ]
+};
+const config = {
+  type: 'line',
+  data: data,
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: false,
+        text: 'Statistiques'
+      }
+    }
+  },
+};
+var myChart ;
+setTimeout(()=>{
+    const ctx = document.getElementById('myChart');
+ myChart = new Chart(ctx, config);
+  set_nb_cards(0);  },1)
+</script>
+<body>
+
+<!-- Navigation (Stays on Top) -->
+<div class="w3-top w3-bar w3-black">
+<a href="#subject" class="w3-bar-item w3-button">Story</a>
+<a href="#solve" class="w3-bar-item w3-button">Solve</a>
+<a href="#rules" class="w3-bar-item w3-button">Rules</a>
+<a href="#play" class="w3-bar-item w3-button">Play</a>
+<a href="#about" class="w3-bar-item w3-button">About</a>
+</div>
+
+<!-- Subject -->
+<div class="w3-light-grey w3-padding-32 w3-center">
+  <h1 class="w3-jumbo">Le paradoxe Monty Hall</h1>
+</div>
+<div  id="subject"  class="w3-row-padding ">
+
+  <div  class="w3-half w3-justify w3-padding-large">
+    <br> <h1 class="w3-center">Le problème</h1>
+  <p>Le problème de Monty Hall est un casse-tête probabiliste librement inspiré du jeu télévisé américain Let's Make a Deal. Il est simple dans son énoncé, mais non intuitif dans sa résolution et c'est pourquoi on parle parfois à son sujet de paradoxe de Monty Hall. Il porte le nom de celui qui a présenté ce jeu aux États-Unis pendant treize ans, Monty Hall. <a href="https://fr.wikipedia.org/wiki/Probl%C3%A8me_de_Monty_Hall" target="_blank" > Wikipedia</a>
+  <hr>
+  Le jeu oppose un présentateur à un candidat (le joueur). Ce joueur est placé devant trois portes fermées. Derrière l'une d'elles se trouve une voiture et derrière chacune des deux autres se trouve une chèvre. Il doit tout d'abord désigner une porte. Puis le présentateur doit ouvrir une porte qui n'est ni celle choisie par le candidat, ni celle cachant la voiture (le présentateur sait quelle est la bonne porte dès le début). Le candidat a alors le droit d'ouvrir la porte qu'il a choisie initialement, ou d'ouvrir la troisième porte.
+
+    Les questions qui se posent au candidat sont :
+    
+    <br>Que doit-il faire ?
+    <br>Quelles sont ses chances de gagner la voiture en agissant au mieux ?</p>
+    <hr>
+  La résolution du problème n'est plus à présenter... Quand je fais moi-même cette démontration en me concentrant bien, la solution est évidente.<br> Mais quand je suis au coeur de l'action, mon intuition aux prises avec mes émotions, commence à me jouer des tours!
+  En effet j'aurais toujours tendance à me dire que si il reste 2 options alors j'ai une chance sur 2...<br> Hors c'est faux! Il faut toujours changer! Statistiquement parlant...
+</p></div>
+<div id="solve"  class="w3-half w3-justify w3-padding-large"  >
+  <br>  <h1 class="w3-center">La démonstration</h1>
+<p>Dans ce jeu, nous avons 3 options, admettons pour l'expérience que la voiture soit toujours au milieu (2e option).<br>
+Cas 1. Je choisis l'option 1 : alors le présentateur élimine  l'option 3. Et si je change je choisis  l'option 2 et...  je gagne!  <br>
+Cas 2. Je choisis l'option 2 :  le présentateur élimine l'option 1 ou le 3, peu importe. Et si je change, je fais forcément le mauvais choix et...  je perds! <br> 
+Cas 3. Je choisis l'option 3 :  le présentateur élimine  l'option 1. Et si je change, je choisis l'option 2 et...  je gagne! <br> 
+Je gagne 2 fois sur 3, j'ai 66% de chances de gagner en changeant systématiquement! 
+On pourait trouver la même réponse en évaluant ses chances de pas choisir le bon rideau du premier coup...
+</p>
+<hr></div>
+
+<!-- Rules -->
+<div id="rules"  class="w3-half w3-justify w3-padding-large" >
+  <br><h1 class="w3-center">Les règles</h1>
+<p>Mais rien ne vaut l'expérimentation pour court-circuiter et corriger son intuition<br>
+Quand on augmente le nombre de choix de départ et qu'on réduit le choix à 2, on s'aperçoit très vite qu'il faut VRAIMENT changer, notre intuition reprendrait-elle le dessus??<br>
+On peut jouer à plusieurs sur différents smartphones, car c'est le même tirage pour tout le monde au même moment<br>
+Un mode témoin permet à une tierce personne de contrôler le tirage, pour s'assurer que l'ordinateur ne triche pas!
+</p>
+</div>
+</div>
+<!-- Start Content -->
+<hr>
+<div id="play" class=" w3-center" style="padding:5vmin;">
+  <br>
+  <h1 class="w3-center">Let's play!</h1><br>
+ 
+  <div class="w3-row w3-center w3-row-padding">
+  <div  class="w3-third" g >
+    <div id="player" class="w3-card w3-round-xlarge" onclick="change_mode('player');" style="height:10vmin;max-height:60px;background-color: blue; display:inline-block;overflow:hidden;color:white;text-align: center;padding: 2vmin; ">Joueur</div>
+    <div id="witness" class="w3-card w3-round-xlarge"  onclick="change_mode('witness');"style="height:10vmin;max-height:60px;background-color: gray;  display:inline-block; overflow:hidden;color:white;padding: 2vmin;text-align: center;  ">Témoin</div>
+    </div>
+
+<!-- Nb Cards Content -->
+<div   class="w3-third"  stxyle="margin:0 auto;width:85vmin;" >
+  <div id="nb_cards" class="w3-card w3-round-xlarge" style="height:10vmin;max-height:60px;background-color: white; display:inline-block;overflow:hidden;color:rgb(14, 13, 13);padding: 2vmin;text-align: center; ">  Nombre de cartes :  3</div>
+  <div style="display:inline-block;"> 
+  <div class="w3-card w3-round-xlarge" onclick="set_nb_cards(1)"  style="width:10vmin;max-height:60px;height:10vmin;background-color: blue; display:inline-block;overflow:hidden;color:white;padding: 2vmin;text-align: center; ">+</div>
+   <div class="w3-card w3-round-xlarge" onclick="set_nb_cards(-1)"  style="width:10vmin;max-height:60px;height:10vmin;background-color: red;  display:inline-block; overflow:hidden;color:white;padding: 2vmin;text-align: center;  ">-</div>
+   </div></div>
+
+ 
+ <!-- Party Content -->
+<div   class="w3-third"  stxyle="margin:0 auto;width:85vmin;" >
+  <div id="idparty" class="w3-card w3-round-xlarge" style="height:10vmin;max-height:60px;background-color: white; display:inline-block;overflow:hidden;color:rgb(14, 13, 13);padding: 2vmin;text-align: center; ">  Party  :  Marty Michel 2344 1 </div>
+   <div class="w3-card w3-round-xlarge" onclick="reset()" style="width:20vmin;height:10vmin;max-height:60px;background-color: orange; display:inline-block;overflow:hidden;color:white;padding: 2vmin;text-align: center; ">Reset</div>
+   </div>
+   </div>
+   
+    <div id="div_cards" style="margin:0 auto;width:54vmin;padding-top:10vmin;" >
+</div>
+
+
+<br>
+ <!-- Party Content -->
+ <div  style="margin:0 auto;width:85vmin;" >
+  <div id="info" onclick="info_click()" class="w3-card w3-round-xlarge" style="width:85vmin;height:10vmin;background-color: green; display:inline-block;overflow:hidden;color:rgb(255, 255, 255);max-height: 60px;padding: 2vmin;text-align: center; ">  Trouvez la bonne carte ! </div>
+
+   </div>
+<br>
+<!-- Parties gagnees Content -->
+<div id="party_block"  style="margin:0 auto;width:85vmin;" >
+<div id="parties" class="w3-card w3-round-xlarge" style="width:60vmin;height:10vmin;background-color: white; display:inline-block;overflow:hidden;color:rgb(14, 13, 13);padding: 2vmin;text-align: center;max-height: 60px; ">  Parties gagnées : 3/4 </div>
+<div id="percparties" class="w3-card w3-round-xlarge"  style="width:20vmin;height:10vmin;background-color: white; display:inline-block;overflow:hidden;color:black;padding: 2vmin;text-align: center; max-height: 60px;">45%</div>
+</div>
+<hr>
+
+
+<!-- Simulation -->
+<div  style="margin:0 auto;width:85vmin;" >
+  <div class="w3-card w3-round-xlarge" style="width:20vmin;height:10vmin;background-color: white; display:inline-block;overflow:hidden;color:rgb(14, 13, 13);padding: 2vmin;text-align: center; max-height: 60px;"> Simul.</div>
+
+  <div id='simul_2' onclick="simulate(2)" class="w3-card w3-round-xlarge" style="width:20vmin;height:10vmin;background-color: rgb(182, 84, 38); display:inline-block;overflow:hidden;color:white;padding: 2vmin;text-align: center;max-height: 60px; ">Garde</div>
+  <div id='simul_0' onclick="simulate(0)" class="w3-card w3-round-xlarge" style="width:20vmin;height:10vmin;background-color: gray; display:inline-block;overflow:hidden;color:white;padding: 2vmin;text-align: center;max-height: 60px; ">50/50</div>
+  <div id='simul_1' onclick="simulate(1)"  class="w3-card w3-round-xlarge" style="width:20vmin;height:10vmin;background-color: orange;  display:inline-block; overflow:hidden;color:white;padding: 2vmin;text-align: center; max-height: 60px; ">Change</div>
+     <div id='stop_simul' onclick="simul=false" class="w3-card w3-round-xlarge" style="width:20vmin;height:10vmin;background-color: red; display:none;overflow:hidden;color:white;padding: 2vmin;text-align: center; max-height: 60px;">STOP</div>
+    </div>
+ </div>
+<!-- Stats Content -->
+<div id="stats" class="w3-content w3-padding-large">
+  <hr>
+  <h1 class="w3-center">Stats</h1>
+<canvas id="myChart" style="height:40vmin; width:90vmin"></canvas>
+</div>
+
+
+
+
+<!-- links -->
+<div id="links" class="w3-content w3-padding-large" >
+<h2 class="w3-center">Liens</h2>
+<div class="w3-row w3-center">
+  Quelques sources qui m'ont aidé à réfléchir sur le sujet
+</div> <br>
+  <div class="w3-row">  L'excellent youtubeur Science4all explique très bien le problème et surtout l'histoire de Marylin Vos Savant : 
+<a href="https://www.youtube.com/watch?v=VEWgOMPkXg0" target="_blank" >Vidéo Youtube</a>
+<br>
+La page wikipedia pour la théorie :
+<a href="https://fr.wikipedia.org/wiki/Probl%C3%A8me_de_Monty_Hall" target="_blank" >Wikipedia</a>
+<br>
+</div>
+</div>
+
+
+<!-- About -->
+<div id="about" class="w3-container w3-center w3-padding-32 " style="background-color: black;color:white">
+<h2 class="w3-wide">À propos</h2>
+<img src="static/img/img_me.jpg" class="w3-circle" style="width:100px"><br>
+
+<a href="https://www.linkedin.com/in/philippe-hoton/" target="_blank">LinkedIn</a>
+<a href="mailto:philippe.hoton@gmail.com"  target="_blank">Mail</a><br>
+<p class="w3-content w3-padding-large w3-opacity w3-center"><i></i>Développeur informatique autodidacte touche-à-tout et passionné par l'IA depuis tout jeune, j'ai décidé (enfin) de me former aux technologies de la Data et au Machine learning. J'adore chercher à comprendre les mystères du fonctionnement de notre cerveau, comment apprend-on par exemple? Et dans le cas du Monty Hall : est-ce que notre instinct nous met toujours en défaut, ou finit-il par se corriger...</i></p> 
+
+<br>
+<script src="https://platform.linkedin.com/in.js" type="text/javascript">lang: en_US</script>
+<script type="IN/Share" data-url="https://www.linkedin.com"></script>
+<p class="w3-center w3-padding">Powered by <a href="https://www.w3schools.com/w3css/default.asp" title="W3.CSS" target="_blank">w3.css</a></p>
+</div>
+
+<!-- End Content -->
+</div>
+
+</body>
+</html>
